@@ -26,7 +26,7 @@ section{background:var(--card);border:2px solid var(--line);border-radius:18px;p
 section[hidden]{display:none}
 h2{margin:0 0 14px;font-size:1.3rem}
 label{display:block;font-weight:600;margin:12px 0 4px}
-input{width:100%;font:inherit;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+input,select{width:100%;font:inherit;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
 .out{margin-top:18px;padding:14px;border-radius:12px;background:var(--bg);border-left:6px solid var(--acc);font-size:1.15rem;font-weight:600;min-height:3.2em}
 .out span{display:block;font-weight:400;color:var(--mute);font-size:.95rem}
 .row{display:flex;gap:8px}.row input{flex:1}
@@ -48,7 +48,8 @@ li span{flex:1;overflow-wrap:anywhere}.done{text-decoration:line-through;color:v
 <button data-t="disc" aria-pressed="true">Discount<small>How much will I pay?</small></button>
 <button data-t="split" aria-pressed="false">Split bill<small>Who pays how much?</small></button>
 <button data-t="emi" aria-pressed="false">Loan EMI<small>Monthly payment</small></button>
-<button data-t="age" aria-pressed="false">Age<small>Years, months, days</small></button>
+<button data-t="gst" aria-pressed="false">GST<small>Add or remove GST</small></button>
+<button data-t="unit" aria-pressed="false">Unit converter<small>kg, km, °C and more</small></button>
 <button data-t="bmi" aria-pressed="false">Weight check<small>BMI</small></button>
 <button data-t="todo" aria-pressed="false">To-do list<small>Do not forget things</small></button>
 </div>
@@ -76,10 +77,24 @@ li span{flex:1;overflow-wrap:anywhere}.done{text-decoration:line-through;color:v
 <div class="out" id="e-out" aria-live="polite">Fill all three boxes.</div>
 </section>
 
-<section id="age" hidden>
-<h2>Age</h2>
-<label for="a-d">Date of birth</label><input id="a-d" type="date">
-<div class="out" id="a-out" aria-live="polite">Pick your date of birth.</div>
+<section id="gst" hidden>
+<h2>GST calculator</h2>
+<label for="g-a">Amount (₹)</label><input id="g-a" inputmode="decimal" placeholder="1000">
+<label for="g-r">GST rate (%)</label><input id="g-r" inputmode="decimal" placeholder="18">
+<label for="g-m">What do you want?</label>
+<select id="g-m"><option value="add">Add GST to my price</option><option value="rem">Remove GST from my price</option></select>
+<div class="out" id="g-out" aria-live="polite">Type the amount and the GST rate.</div>
+<p class="note">Check the correct GST rate for your item.</p>
+</section>
+
+<section id="unit" hidden>
+<h2>Unit converter</h2>
+<label for="u-c">What do you want to measure?</label>
+<select id="u-c"><option>Weight</option><option>Length</option><option>Temperature</option></select>
+<label for="u-v">Number</label><input id="u-v" inputmode="decimal" placeholder="10">
+<label for="u-f">From</label><select id="u-f"></select>
+<label for="u-t">To</label><select id="u-t"></select>
+<div class="out" id="u-out" aria-live="polite">Type a number to change its unit.</div>
 </section>
 
 <section id="bmi" hidden>
@@ -120,14 +135,27 @@ function calc(){
   if(w>0&&h>0){const v=w/(h*h);
     const k=v<18.5?'Low weight':v<25?'Normal weight':v<30?'A little high':'High weight';
     $('b-out').innerHTML='BMI '+v.toFixed(1)+'<span>'+k+'</span>';}
-  const d=$('a-d').value;
-  if(d){const b=new Date(d),x=new Date();
-    let y=x.getFullYear()-b.getFullYear(),mo=x.getMonth()-b.getMonth(),da=x.getDate()-b.getDate();
-    if(da<0){mo--;da+=new Date(x.getFullYear(),x.getMonth(),0).getDate();}
-    if(mo<0){y--;mo+=12;}
-    $('a-out').innerHTML=(y<0?'That date is in the future.':y+' years, '+mo+' months, '+da+' days');}
+  const g=n('g-a'),gr=n('g-r');
+  if(g>0&&gr>=0){
+    if($('g-m').value==='add'){const t=g*gr/100;$('g-out').innerHTML='Total to pay '+money(g+t)+'<span>GST '+money(t)+' (CGST '+money(t/2)+' + SGST '+money(t/2)+')</span>';}
+    else{const b=g/(1+gr/100);$('g-out').innerHTML='Price without GST '+money(b)+'<span>GST inside the price: '+money(g-b)+'</span>';}
+  }
+  if($('u-v').value!==''){
+    const c=$('u-c').value,f=$('u-f').value,to=$('u-t').value,v=n('u-v');let r;
+    if(c==='Temperature'){const k=f==='°C'?v:(v-32)*5/9;r=to==='°C'?k:k*9/5+32;}
+    else r=v*U[c][f]/U[c][to];
+    $('u-out').innerHTML=v+' '+f+' = '+r.toLocaleString('en-IN',{maximumFractionDigits:4})+' '+to;
+  }
 }
+const U={Weight:{kg:1,g:.001,lb:.45359237,oz:.028349523},Length:{km:1000,m:1,cm:.01,mm:.001,mile:1609.344,feet:.3048,inch:.0254},Temperature:{'°C':0,'°F':0}};
+function fill(){
+  const ks=Object.keys(U[$('u-c').value]);
+  ['u-f','u-t'].forEach((id,i)=>{$(id).innerHTML=ks.map(k=>'<option>'+k+'</option>').join('');$(id).selectedIndex=Math.min(i,ks.length-1);});
+}
+$('u-c').addEventListener('change',()=>{fill();calc();});
+fill();
 document.querySelectorAll('input:not(#t-in)').forEach(i=>i.addEventListener('input',calc));
+document.querySelectorAll('select').forEach(s=>s.addEventListener('change',calc));
 
 let todos=[];
 try{todos=JSON.parse(localStorage.getItem('todos')||'[]');}catch(e){}
