@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Helper</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#eef3f1;--card:#fff;--ink:#10231c;--mute:#4d625a;--acc:#0a7d5a;--accink:#fff;--line:#cddbd5;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a16;--card:#17261f;--ink:#e6f1ec;--mute:#9bb3a9;--acc:#4fd1a0;--accink:#07261b;--line:#2b4036;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a16;--card:#17261f;--ink:#e6f1ec;--mute:#9bb3a9;--acc:#4fd1a0;--accink:#07261b;--line:#2b4036;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:2.3rem;line-height:1.05;font-weight:800;margin:0 0 8px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 22px}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
+.tabs button{font:inherit;font-weight:600;text-align:left;padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;min-height:64px}
+.tabs button small{display:block;font-weight:400;color:var(--mute);font-size:.8rem}
+.tabs button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc);color:var(--accink)}
+.tabs button[aria-pressed="true"] small{color:inherit}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+section{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:20px}
+section[hidden]{display:none}
+h2{margin:0 0 14px;font-size:1.3rem}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input{width:100%;font:inherit;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.out{margin-top:18px;padding:14px;border-radius:12px;background:var(--bg);border-left:6px solid var(--acc);font-size:1.15rem;font-weight:600;min-height:3.2em}
+.out span{display:block;font-weight:400;color:var(--mute);font-size:.95rem}
+.row{display:flex;gap:8px}.row input{flex:1}
+.btn{font:inherit;font-weight:600;padding:12px 16px;border-radius:10px;border:0;background:var(--acc);color:var(--accink);cursor:pointer}
+ul{list-style:none;margin:14px 0 0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+li input{width:22px;height:22px;flex:none}
+li span{flex:1;overflow-wrap:anywhere}.done{text-decoration:line-through;color:var(--mute)}
+.del{font:inherit;font-size:.85rem;background:none;border:0;color:var(--mute);text-decoration:underline;cursor:pointer}
+.note{color:var(--mute);font-size:.9rem;margin:10px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Daily Helper</h1>
+<p class="sub">Small tools for things we do every day. Tap one.</p>
+
+<div class="tabs" id="tabs">
+<button data-t="disc" aria-pressed="true">Discount<small>How much will I pay?</small></button>
+<button data-t="split" aria-pressed="false">Split bill<small>Who pays how much?</small></button>
+<button data-t="emi" aria-pressed="false">Loan EMI<small>Monthly payment</small></button>
+<button data-t="age" aria-pressed="false">Age<small>Years, months, days</small></button>
+<button data-t="bmi" aria-pressed="false">Weight check<small>BMI</small></button>
+<button data-t="todo" aria-pressed="false">To-do list<small>Do not forget things</small></button>
+</div>
+
+<section id="disc">
+<h2>Discount</h2>
+<label for="d-p">Price (₹)</label><input id="d-p" inputmode="decimal" placeholder="1999">
+<label for="d-o">Discount (%)</label><input id="d-o" inputmode="decimal" placeholder="30">
+<div class="out" id="d-out" aria-live="polite">Type the price and the discount.</div>
+</section>
+
+<section id="split" hidden>
+<h2>Split bill</h2>
+<label for="s-t">Total bill (₹)</label><input id="s-t" inputmode="decimal" placeholder="2400">
+<label for="s-n">How many people?</label><input id="s-n" inputmode="numeric" placeholder="4">
+<label for="s-tip">Tip (%) – optional</label><input id="s-tip" inputmode="decimal" placeholder="0">
+<div class="out" id="s-out" aria-live="polite">Type the bill and the people.</div>
+</section>
+
+<section id="emi" hidden>
+<h2>Loan EMI</h2>
+<label for="e-a">Loan amount (₹)</label><input id="e-a" inputmode="decimal" placeholder="500000">
+<label for="e-r">Interest per year (%)</label><input id="e-r" inputmode="decimal" placeholder="10">
+<label for="e-y">Years to pay</label><input id="e-y" inputmode="decimal" placeholder="5">
+<div class="out" id="e-out" aria-live="polite">Fill all three boxes.</div>
+</section>
+
+<section id="age" hidden>
+<h2>Age</h2>
+<label for="a-d">Date of birth</label><input id="a-d" type="date">
+<div class="out" id="a-out" aria-live="polite">Pick your date of birth.</div>
+</section>
+
+<section id="bmi" hidden>
+<h2>Weight check (BMI)</h2>
+<label for="b-w">Weight (kg)</label><input id="b-w" inputmode="decimal" placeholder="70">
+<label for="b-h">Height (cm)</label><input id="b-h" inputmode="decimal" placeholder="170">
+<div class="out" id="b-out" aria-live="polite">Type your weight and height.</div>
+<p class="note">This is only a rough guide. Ask a doctor for real advice.</p>
+</section>
+
+<section id="todo" hidden>
+<h2>To-do list</h2>
+<div class="row"><input id="t-in" placeholder="Pay light bill" aria-label="New task"><button class="btn" id="t-add">Add</button></div>
+<p class="note" id="t-empty">Nothing here yet. Add your first task.</p>
+<ul id="t-list"></ul>
+<p class="note">Saved on this phone only.</p>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const n=id=>parseFloat($(id).value)||0;
+const money=x=>'₹'+x.toLocaleString('en-IN',{maximumFractionDigits:2});
+
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!==b.dataset.t);
+});
+
+function calc(){
+  const p=n('d-p'),o=n('d-o');
+  if(p>0&&o>=0){const s=p*o/100;$('d-out').innerHTML='You pay '+money(p-s)+'<span>You save '+money(s)+'</span>';}
+  const t=n('s-t'),c=Math.floor(n('s-n')),tip=n('s-tip');
+  if(t>0&&c>0){const all=t*(1+tip/100);$('s-out').innerHTML='Each person pays '+money(all/c)+'<span>Total with tip: '+money(all)+'</span>';}
+  const a=n('e-a'),r=n('e-r')/1200,m=n('e-y')*12;
+  if(a>0&&m>0){const e=r?a*r*Math.pow(1+r,m)/(Math.pow(1+r,m)-1):a/m;
+    $('e-out').innerHTML='Pay '+money(e)+' every month<span>Extra interest you pay: '+money(e*m-a)+'</span>';}
+  const w=n('b-w'),h=n('b-h')/100;
+  if(w>0&&h>0){const v=w/(h*h);
+    const k=v<18.5?'Low weight':v<25?'Normal weight':v<30?'A little high':'High weight';
+    $('b-out').innerHTML='BMI '+v.toFixed(1)+'<span>'+k+'</span>';}
+  const d=$('a-d').value;
+  if(d){const b=new Date(d),x=new Date();
+    let y=x.getFullYear()-b.getFullYear(),mo=x.getMonth()-b.getMonth(),da=x.getDate()-b.getDate();
+    if(da<0){mo--;da+=new Date(x.getFullYear(),x.getMonth(),0).getDate();}
+    if(mo<0){y--;mo+=12;}
+    $('a-out').innerHTML=(y<0?'That date is in the future.':y+' years, '+mo+' months, '+da+' days');}
+}
+document.querySelectorAll('input:not(#t-in)').forEach(i=>i.addEventListener('input',calc));
+
+let todos=[];
+try{todos=JSON.parse(localStorage.getItem('todos')||'[]');}catch(e){}
+function save(){try{localStorage.setItem('todos',JSON.stringify(todos));}catch(e){}}
+function draw(){
+  const ul=$('t-list');ul.innerHTML='';
+  todos.forEach((t,i)=>{
+    const li=document.createElement('li'),cb=document.createElement('input'),sp=document.createElement('span'),x=document.createElement('button');
+    cb.type='checkbox';cb.checked=t.done;cb.setAttribute('aria-label','Done');
+    cb.onchange=()=>{t.done=cb.checked;save();draw();};
+    sp.textContent=t.text;if(t.done)sp.className='done';
+    x.textContent='Delete';x.className='del';x.onclick=()=>{todos.splice(i,1);save();draw();};
+    li.append(cb,sp,x);ul.append(li);
+  });
+  $('t-empty').hidden=todos.length>0;
+}
+function add(){const v=$('t-in').value.trim();if(!v)return;todos.push({text:v,done:false});$('t-in').value='';save();draw();}
+$('t-add').onclick=add;
+$('t-in').addEventListener('keydown',e=>{if(e.key==='Enter')add();});
+draw();
+</script>
+</body>
+</html>
