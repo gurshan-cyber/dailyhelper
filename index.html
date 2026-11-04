@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Daily Helper</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a7d5a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <style>
 :root{--bg:#eef3f1;--card:#fff;--ink:#10231c;--mute:#4d625a;--acc:#0a7d5a;--accink:#fff;--line:#cddbd5;color-scheme:light;
@@ -37,12 +41,21 @@ li input{width:22px;height:22px;flex:none}
 li span{flex:1;overflow-wrap:anywhere}.done{text-decoration:line-through;color:var(--mute)}
 .del{font:inherit;font-size:.85rem;background:none;border:0;color:var(--mute);text-decoration:underline;cursor:pointer}
 .note{color:var(--mute);font-size:.9rem;margin:10px 0 0}
+.ask{margin-bottom:18px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px}
+.ask label{margin-top:0}.ask .out{min-height:0;margin-top:12px}.row .btn{flex:none}
+#install{margin:0 0 16px;width:100%}
 </style>
 </head>
 <body>
 <main>
 <h1>Daily Helper</h1>
 <p class="sub">Small tools for things we do every day. Tap one.</p>
+<button class="btn" id="install" hidden>Install this app on my phone</button>
+<div class="ask">
+<label for="q">Ask Helper – type or speak</label>
+<div class="row"><input id="q" placeholder="18% GST on 5000" autocomplete="off"><button class="btn" id="mic" aria-label="Speak">🎤</button><button class="btn" id="go">Go</button></div>
+<div class="out" id="q-out" aria-live="polite">Example: 30% off 1999</div>
+</div>
 
 <div class="tabs" id="tabs">
 <button data-t="disc" aria-pressed="true">Discount<small>How much will I pay?</small></button>
@@ -176,6 +189,47 @@ function add(){const v=$('t-in').value.trim();if(!v)return;todos.push({text:v,do
 $('t-add').onclick=add;
 $('t-in').addEventListener('keydown',e=>{if(e.key==='Enter')add();});
 draw();
+
+const A={kg:'kg',kilo:'kg',kilogram:'kg',kilograms:'kg',g:'g',gram:'g',grams:'g',lb:'lb',lbs:'lb',pound:'lb',pounds:'lb',oz:'oz',ounce:'oz',km:'km',kilometer:'km',kilometers:'km',m:'m',meter:'m',meters:'m',cm:'cm',mm:'mm',mile:'mile',miles:'mile',feet:'feet',foot:'feet',ft:'feet',inch:'inch',inches:'inch',c:'°C',celsius:'°C',f:'°F',fahrenheit:'°F'};
+const cat=u=>Object.keys(U).find(c=>u in U[c]);
+function convert(v,f,t){const c=cat(f);if(!c||c!==cat(t))return null;
+  if(c==='Temperature'){const k=f==='°C'?v:(v-32)*5/9;return t==='°C'?k:k*9/5+32;}
+  return v*U[c][f]/U[c][t];}
+const fm=x=>x.toLocaleString('en-IN',{maximumFractionDigits:4});
+function ask(){
+  let t=$('q').value.toLowerCase().replace(/[₹,]/g,'').replace(/\b(rs|rupees?)\b/g,'').replace(/per ?cent/g,'%');
+  t=t.replace(/(\d+\.?\d*)\s*(lakhs?|lacs?)/g,(m,a)=>a*1e5).replace(/(\d+\.?\d*)\s*crores?/g,(m,a)=>a*1e7).replace(/(\d+\.?\d*)\s*k\b/g,(m,a)=>a*1e3);
+  const out=h=>{$('q-out').innerHTML=h;};
+  const pm=t.match(/(\d+\.?\d*)\s*%/),pct=pm?+pm[1]:null;
+  const nums=(t.replace(/(\d+\.?\d*)\s*%/,' ').match(/\d+\.?\d*/g)||[]).map(Number);
+  let m=t.match(/(-?\d+\.?\d*)\s*([a-z°]+)\s+(?:to|in|into)\s+([a-z°]+)/);
+  if(m&&A[m[2]]&&A[m[3]]){const r=convert(+m[1],A[m[2]],A[m[3]]);if(r!==null)return out(m[1]+' '+A[m[2]]+' = '+fm(r)+' '+A[m[3]]);}
+  if(/gst/.test(t)&&pct!==null&&nums.length){const a=nums[0];
+    if(/remove|without|inclusive|included|including|exclude/.test(t)){const b=a/(1+pct/100);return out('Price without GST '+money(b)+'<span>GST inside: '+money(a-b)+'</span>');}
+    const g=a*pct/100;return out('Total '+money(a+g)+'<span>GST '+money(g)+'</span>');}
+  if(/\b(off|discount|sale)\b/.test(t)&&pct!==null&&nums.length){const s=nums[0]*pct/100;return out('You pay '+money(nums[0]-s)+'<span>You save '+money(s)+'</span>');}
+  if(/split|divide|share|among|between/.test(t)&&nums.length>1&&nums[1]>=1){const all=nums[0]*(1+(pct||0)/100);return out('Each pays '+money(all/Math.floor(nums[1]))+'<span>Total '+money(all)+'</span>');}
+  if(/emi|loan/.test(t)&&nums.length>1){const rest=nums.slice(1);let r=pct;if(r===null)r=rest.shift();let y=rest[0];
+    if(r!==undefined&&y){if(/month/.test(t))y/=12;const i=r/1200,n2=y*12,e=i?nums[0]*i*Math.pow(1+i,n2)/(Math.pow(1+i,n2)-1):nums[0]/n2;
+      return out('Pay '+money(e)+' every month<span>Extra interest: '+money(e*n2-nums[0])+'</span>');}}
+  if(pm&&/\bof\b/.test(t)&&nums.length)return out(pct+'% of '+nums[0]+' = '+fm(nums[0]*pct/100));
+  if(/^[\d+\-*/().\sx×÷]+$/.test(t)&&/\d/.test(t)){try{const r=Function('return ('+t.replace(/[x×]/g,'*').replace(/÷/g,'/')+')')();if(isFinite(r))return out(fm(r));}catch(e){}}
+  out('I did not understand.<span>Try: 30% off 1999 · 18% GST on 5000 · split 2400 among 4 · emi 5 lakh at 10% for 5 years · 10 kg to lb</span>');
+}
+$('go').onclick=ask;
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')ask();});
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR)$('mic').hidden=true;
+else $('mic').onclick=()=>{const r=new SR();r.lang='en-IN';
+  r.onresult=e=>{$('q').value=e.results[0][0].transcript;ask();};
+  r.onerror=()=>{$('q-out').textContent='I could not hear you. Try again.';};
+  r.start();$('q-out').textContent='Listening…';};
+
+let ip=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;$('install').hidden=false;});
+$('install').onclick=async()=>{if(!ip)return;ip.prompt();await ip.userChoice;ip=null;$('install').hidden=true;};
+window.addEventListener('appinstalled',()=>{$('install').hidden=true;});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
